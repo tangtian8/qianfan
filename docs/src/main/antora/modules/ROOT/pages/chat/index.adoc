@@ -1,0 +1,217 @@
+= QianFan Chat
+
+The QianFan chat models provide conversational AI capabilities for building intelligent chatbots and assistants.
+
+== Prerequisites
+
+You will need to create an API key with QianFan to access QianFan language models.
+
+Create an account at https://login.bce.baidu.com/new-reg[QianFan registration page] and generate the token on the https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application[API Keys page].
+The QianFan integration defines configuration properties named `spring.ai.qianfan.api-key` and `spring.ai.qianfan.secret-key`.
+You should set these to the values of the `API Key` and `Secret Key` obtained from the https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application[API Keys page].
+Exporting environment variables is one way to set these configuration properties:
+
+[source,shell]
+----
+export SPRING_AI_QIANFAN_API_KEY=<INSERT API KEY HERE>
+export SPRING_AI_QIANFAN_SECRET_KEY=<INSERT SECRET KEY HERE>
+----
+
+== Getting Started
+
+=== Maven Dependency
+
+Add the QianFan dependency to your project:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-qianfan</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+----
+
+=== Gradle Dependency
+
+For Gradle projects, add:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-qianfan:1.0.0-SNAPSHOT'
+}
+----
+
+== Configuration Properties
+
+=== Chat Properties
+
+The prefix `spring.ai.qianfan.chat` is the property prefix that lets you configure the chat client implementation for QianFan.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.qianfan.chat.base-url | The URL to connect to for chat services | https://api.qianfan.chat
+| spring.ai.qianfan.chat.api-key | Overrides the spring.ai.qianfan.api-key to provide chat specific api-key | -
+| spring.ai.qianfan.chat.secret-key | Overrides the spring.ai.qianfan.secret-key to provide chat specific secret-key | -
+| spring.ai.qianfan.chat.options.model | This is the QianFan Chat model to use | `abab5.5-chat` (the `abab5.5s-chat`, `abab5.5-chat`, and `abab6-chat` point to the latest model versions)
+| spring.ai.qianfan.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. | -
+| spring.ai.qianfan.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. | 0.7
+| spring.ai.qianfan.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling. | 1.0
+| spring.ai.qianfan.chat.options.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far. | 0.0f
+| spring.ai.qianfan.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far. | 0.0f
+| spring.ai.qianfan.chat.options.stop | The model will stop generating characters specified by stop | -
+|====
+
+=== Connection Properties
+
+The prefix `spring.ai.qianfan` is used as the property prefix that lets you connect to QianFan.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.qianfan.base-url | The URL to connect to | https://api.qianfan.chat
+| spring.ai.qianfan.api-key | The API Key | -
+| spring.ai.qianfan.secret-key | The Secret Key | -
+|====
+
+=== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the QianFan Chat client.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts | Maximum number of retry attempts. | 10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. | 2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. | 5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. | 3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry. | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry. | empty
+|====
+
+== Runtime Options [[chat-options]]
+
+The link:https://github.com/spring-ai-community/qianfan/blob/main/qianfan-core/src/main/java/org/springframework/ai/qianfan/QianFanChatOptions.java[QianFanChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `QianFanChatModel(api, options)` constructor or the `spring.ai.qianfan.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        QianFanChatOptions.builder()
+            .model(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
+            .temperature(0.5)
+        .build()
+    ));
+----
+
+== Sample Controller
+
+Create a Spring Boot project and add the `spring-ai-qianfan` to your dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to configure the QianFan Chat client:
+
+[source,application.properties]
+----
+spring.ai.qianfan.api-key=YOUR_API_KEY
+spring.ai.qianfan.secret-key=YOUR_SECRET_KEY
+spring.ai.qianfan.chat.options.model=ernie_speed
+spring.ai.qianfan.chat.options.temperature=0.7
+----
+
+TIP: replace the `api-key` and `secret-key` with your QianFan credentials.
+
+Here is an example of a simple `@Controller` class that uses the chat client for text generations:
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final QianFanChatModel chatClient;
+
+    @Autowired
+    public ChatController(QianFanChatModel chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", this.chatClient.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+    public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        var prompt = new Prompt(new UserMessage(message));
+        return this.chatClient.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The link:https://github.com/spring-ai-community/qianfan/blob/main/qianfan-core/src/main/java/org/springframework/ai/qianfan/QianFanChatModel.java[QianFanChatModel] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the QianFan service.
+
+Next, create a `QianFanChatModel` and use it for text generations:
+
+[source,java]
+----
+var qianFanApi = new QianFanApi(System.getenv("QIANFAN_API_KEY"), System.getenv("QIANFAN_SECRET_KEY"));
+
+var chatClient = new QianFanChatModel(this.qianFanApi, QianFanChatOptions.builder()
+                .model(QianFanApi.ChatModel.ERNIE_Speed_8K.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
+                .build());
+
+ChatResponse response = this.chatClient.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> streamResponse = this.chatClient.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `QianFanChatOptions` provides the configuration information for the chat requests.
+The `QianFanChatOptions.Builder` is fluent options builder.
+
+=== Low-level QianFanApi Client [[low-level-api]]
+
+The link:https://github.com/spring-ai-community/qianfan/blob/main/qianfan-core/src/main/java/org/springframework/ai/qianfan/api/QianFanApi.java[QianFanApi] provides a lightweight Java client for link:https://cloud.baidu.com/doc/WENXINWORKSHOP/s/flfmc9do2[QianFan API].
+
+Here is a simple snippet how to use the api programmatically:
+
+[source,java]
+----
+String systemMessage = "Your name is QianWen";
+
+QianFanApi qianFanApi =
+    new QianFanApi(System.getenv("QIANFAN_API_KEY"), System.getenv("QIANFAN_SECRET_KEY"));
+
+ChatCompletionMessage chatCompletionMessage =
+    new ChatCompletionMessage("Hello world", Role.USER);
+
+// Sync request
+ResponseEntity<ChatCompletion> response = this.qianFanApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), this.systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, false));
+
+// Streaming request
+Flux<ChatCompletionChunk> streamResponse = this.qianFanApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), this.systemMessage, QianFanApi.ChatModel.ERNIE_Speed_8K.getValue(), 0.7, true));
+----
+
+Follow the https://github.com/spring-ai-community/qianfan/blob/main/qianfan-core/src/main/java/org/springframework/ai/qianfan/api/QianFanApi.java[QianFanApi.java]'s JavaDoc for further information.
+
+==== QianFanApi Samples
+* The link:https://github.com/spring-ai-community/qianfan/blob/main/qianfan-core/src/test/java/org/springframework/ai/qianfan/api/QianFanApiIT.java[QianFanApiIT.java] test provides some general examples how to use the lightweight library.

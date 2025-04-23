@@ -1,0 +1,60 @@
+= QianFan AI Models
+:page-aliases: overview.adoc
+
+Baidu's QianFan models provide a comprehensive suite of AI capabilities including chat models, embedding models, and image generation. This documentation covers the integration of QianFan AI services with your applications.
+
+== Overview
+
+QianFan offers several powerful AI models:
+
+* *Chat Models*: Conversational AI models for building intelligent chatbots and assistants
+* *Embedding Models*: Text embedding models for semantic search and similarity analysis
+* *Image Generation*: AI-powered image generation capabilities through the CogView model
+
+== Prerequisites
+
+To use the QianFan AI models, you need to:
+
+1. Create an account at https://login.bce.baidu.com/new-reg[QianFan registration page]
+2. Generate API keys from the https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application[API Keys page]
+
+Configure the following environment variables with your credentials:
+
+[source,shell]
+----
+export SPRING_AI_QIANFAN_API_KEY=<INSERT API KEY HERE>
+export SPRING_AI_QIANFAN_SECRET_KEY=<INSERT SECRET KEY HERE>
+----
+
+== Quick Start
+
+To get started with QianFan models in your application, add the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-qianfan</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+----
+
+== Source Code
+
+The source code for this project is available on GitHub at https://github.com/spring-ai-community/qianfan[spring-ai-community/qianfan].
+
+== Available Services
+
+[cols="1,3"]
+|===
+|Service |Description
+
+|xref:chat/index.adoc[Chat]
+|Build conversational AI applications with QianFan's various chat models
+
+|xref:embeddings/index.adoc[Embeddings]
+|Generate text embeddings for semantic search and text similarity analysis
+
+|xref:image/index.adoc[Image Generation]
+|Create AI-generated images using QianFan's CogView model
+|===

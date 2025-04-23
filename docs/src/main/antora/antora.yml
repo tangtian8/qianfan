@@ -1,0 +1,12 @@
+name: qianfan
+version: true
+title: QianFan AI
+nav:
+  - modules/ROOT/nav.adoc
+ext:
+  collector:
+    - run:
+        command: mvnw process-resources
+        local: true
+      scan:
+        dir: docs/target/classes/antora-resources

@@ -1,0 +1,160 @@
+= QianFan Embeddings
+
+QianFan provides powerful embedding models that can convert text into vector representations for semantic search and similarity analysis.
+
+== Prerequisites
+
+You will need to create an API key with QianFan to access QianFan language models.
+
+Create an account at https://login.bce.baidu.com/new-reg[QianFan registration page] and generate the token on the https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application[API Keys page].
+The QianFan integration defines configuration properties named `spring.ai.qianfan.api-key` and `spring.ai.qianfan.secret-key`.
+You should set these to the values of the `API Key` and `Secret Key` obtained from the https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application[API Keys page].
+Exporting environment variables is one way to set these configuration properties:
+
+[source,shell]
+----
+export SPRING_AI_QIANFAN_API_KEY=<INSERT API KEY HERE>
+export SPRING_AI_QIANFAN_SECRET_KEY=<INSERT SECRET KEY HERE>
+----
+
+== Getting Started
+
+=== Maven Dependency
+
+Add the QianFan dependency to your project:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-qianfan</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+----
+
+=== Gradle Dependency
+
+For Gradle projects, add:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-qianfan:1.0.0-SNAPSHOT'
+}
+----
+
+== Configuration Properties
+
+=== Embedding Properties
+
+The prefix `spring.ai.qianfan.embedding` is the property prefix that configures the `EmbeddingClient` implementation for QianFan.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.qianfan.embedding.base-url | Optional overrides the spring.ai.qianfan.base-url to provide embedding specific url | -
+| spring.ai.qianfan.embedding.api-key | Optional overrides the spring.ai.qianfan.api-key to provide embedding specific api-key | -
+| spring.ai.qianfan.embedding.secret-key | Optional overrides the spring.ai.qianfan.secret-key to provide embedding specific secret-key | -
+| spring.ai.qianfan.embedding.options.model | The model to use | bge_large_zh
+|====
+
+=== Connection Properties
+
+The prefix `spring.ai.qianfan` is used as the property prefix that lets you connect to QianFan.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.qianfan.base-url | The URL to connect to | https://aip.baidubce.com/rpc/2.0/ai_custom
+| spring.ai.qianfan.api-key | The API Key | -
+| spring.ai.qianfan.secret-key | The Secret Key | -
+|====
+
+=== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the QianFan Embedding client.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts | Maximum number of retry attempts. | 10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. | 2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. | 5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. | 3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry. | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry. | empty
+|====
+
+== Runtime Options [[embedding-options]]
+
+The https://github.com/spring-ai-community/qianfan/blob/main/qianfan-core/src/main/java/org/springframework/ai/qianfan/QianFanEmbeddingOptions.java[QianFanEmbeddingOptions.java] provides the QianFan configurations, such as the model to use, etc.
+
+The default options can be configured using the `spring.ai.qianfan.embedding.options` properties as well.
+
+At start-time use the `QianFanEmbeddingModel` constructor to set the default options used for all embedding requests.
+At run-time you can override the default options, using a `QianFanEmbeddingOptions` instance as part of your `EmbeddingRequest`.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        QianFanEmbeddingOptions.builder()
+            .model("Different-Embedding-Model-Deployment-Name")
+        .build()));
+----
+
+== Sample Controller
+
+Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation:
+
+[source,application.properties]
+----
+spring.ai.qianfan.api-key=YOUR_API_KEY
+spring.ai.qianfan.secret-key=YOUR_SECRET_KEY
+spring.ai.qianfan.embedding.options.model=tao_8k
+----
+
+[source,java]
+----
+@RestController
+public class EmbeddingController {
+
+    private final EmbeddingClient embeddingClient;
+
+    @Autowired
+    public EmbeddingController(EmbeddingClient embeddingClient) {
+        this.embeddingClient = embeddingClient;
+    }
+
+    @GetMapping("/ai/embedding")
+    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        return Map.of("embedding", embeddingResponse);
+    }
+}
+----
+
+== Manual Configuration
+
+If you are not using Spring Boot, you can manually configure the QianFan Embedding Client:
+
+[source,java]
+----
+var qianFanApi = new QianFanApi(System.getenv("QIANFAN_API_KEY"), System.getenv("QIANFAN_SECRET_KEY"));
+
+var embeddingClient = new QianFanEmbeddingModel(api, MetadataMode.EMBED, QianFanEmbeddingOptions.builder()
+                        .model("bge_large_en")
+                        .build());
+
+EmbeddingResponse embeddingResponse = this.embeddingClient
+    .embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+----
+
+The `QianFanEmbeddingOptions` provides the configuration information for the embedding requests.
+The options class offers a `builder()` for easy options creation.

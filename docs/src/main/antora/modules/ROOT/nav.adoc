@@ -1,0 +1,7 @@
+* xref:index.adoc[Overview]
+* Chat
+** xref:chat/index.adoc[QianFan Chat]
+* Embeddings
+** xref:embeddings/index.adoc[QianFan Embeddings]
+* Image
+** xref:image/index.adoc[QianFan Image Generation]

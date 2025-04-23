@@ -1,0 +1,166 @@
+= QianFan Image Generation
+
+QianFan provides CogView, a powerful image generation model that allows you to create images from text prompts.
+
+== Prerequisites
+
+You will need to create an API key with QianFan to access QianFan language models.
+
+Create an account at https://login.bce.baidu.com/new-reg[QianFan registration page] and generate the token on the https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application[API Keys page].
+The QianFan integration defines configuration properties named `spring.ai.qianfan.api-key` and `spring.ai.qianfan.secret-key`.
+You should set these to the values of the `API Key` and `Secret Key` obtained from the https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application[API Keys page].
+Exporting environment variables is one way to set these configuration properties:
+
+[source,shell]
+----
+export SPRING_AI_QIANFAN_API_KEY=<INSERT API KEY HERE>
+export SPRING_AI_QIANFAN_SECRET_KEY=<INSERT SECRET KEY HERE>
+----
+
+== Getting Started
+
+=== Maven Dependency
+
+Add the QianFan dependency to your project:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-qianfan</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+----
+
+=== Gradle Dependency
+
+For Gradle projects, add:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-qianfan:1.0.0-SNAPSHOT'
+}
+----
+
+== Configuration Properties
+
+=== Image Generation Properties
+
+The prefix `spring.ai.qianfan.image` is the property prefix that lets you configure the `ImageModel` implementation for QianFan.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.qianfan.image.base-url | Optional overrides the spring.ai.qianfan.base-url to provide image specific url. | -
+| spring.ai.qianfan.image.api-key | Optional overrides the spring.ai.qianfan.api-key to provide image specific api-key. | -
+| spring.ai.qianfan.image.secret-key | Optional overrides the spring.ai.qianfan.secret-key to provide image specific secret-key. | -
+| spring.ai.qianfan.image.options.model | The model to use for image generation. | sd_xl
+| spring.ai.qianfan.image.options.user | A unique identifier representing your end-user, which can help QianFan to monitor and detect abuse. | -
+|====
+
+=== Connection Properties
+
+The prefix `spring.ai.qianfan` is used as the property prefix that lets you connect to QianFan.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.qianfan.base-url | The URL to connect to | https://aip.baidubce.com/rpc/2.0/ai_custom
+| spring.ai.qianfan.api-key | The API Key | -
+| spring.ai.qianfan.secret-key | The Secret Key | -
+|====
+
+=== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the QianFan Image client.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts | Maximum number of retry attempts. | 10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. | 2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. | 5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. | 3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry. | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry. | empty
+|====
+
+== Runtime Options [[image-options]]
+
+The https://github.com/spring-ai-community/qianfan/blob/main/qianfan-core/src/main/java/org/springframework/ai/qianfan/QianFanImageOptions.java[QianFanImageOptions.java] provides model configurations, such as the model to use, the quality, the size, etc.
+
+On start-up, the default options can be configured with the `QianFanImageModel(QianFanImageApi qianFanImageApi)` constructor and the `withDefaultOptions(QianFanImageOptions defaultOptions)` method. Alternatively, use the `spring.ai.qianfan.image.options.*` properties described previously.
+
+At runtime you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
+For example to override the QianFan specific options such as quality and the number of images to create, use the following code example:
+
+[source,java]
+----
+ImageResponse response = qianFanImageModel.call(
+        new ImagePrompt("A light cream colored mini golden doodle",
+        QianFanImageOptions.builder()
+                .N(4)
+                .height(1024)
+                .width(1024).build())
+
+);
+----
+
+== Sample Controller
+
+Here is an example of a simple `@Controller` class that uses the image generation client:
+
+[source,application.properties]
+----
+spring.ai.qianfan.api-key=YOUR_API_KEY
+spring.ai.qianfan.secret-key=YOUR_SECRET_KEY
+spring.ai.qianfan.image.options.model=sd_xl
+----
+
+[source,java]
+----
+@RestController
+public class ImageController {
+
+    private final QianFanImageModel imageModel;
+
+    @Autowired
+    public ImageController(QianFanImageModel imageModel) {
+        this.imageModel = imageModel;
+    }
+
+    @GetMapping("/ai/image")
+    public ResponseEntity<byte[]> generateImage(@RequestParam(value = "prompt", defaultValue = "A beautiful sunset over the ocean") String prompt) {
+        ImageResponse response = this.imageModel.call(new ImagePrompt(prompt));
+        String imageUrl = response.getResult().getOutput().get(0).getUrl();
+        
+        // Download the image from the URL
+        // Return it as a response
+        // Implementation depends on the specific HTTP client used
+    }
+}
+----
+
+== Manual Configuration
+
+If you are not using Spring Boot, you can manually configure the QianFan Image Model:
+
+[source,java]
+----
+var qianFanApi = new QianFanApi(System.getenv("QIANFAN_API_KEY"), System.getenv("QIANFAN_SECRET_KEY"));
+var qianFanImageApi = new QianFanImageApi(qianFanApi);
+
+var imageModel = new QianFanImageModel(qianFanImageApi)
+                        .withDefaultOptions(QianFanImageOptions.builder()
+                        .model("sd_xl")
+                        .build());
+
+ImageResponse response = imageModel.call(
+    new ImagePrompt("A beautiful sunset over the ocean"));
+----
+
+The `QianFanImageOptions` provides the configuration information for the image generation requests.
+The options class offers a `builder()` for easy options creation.
