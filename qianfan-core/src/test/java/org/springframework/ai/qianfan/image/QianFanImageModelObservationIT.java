@@ -79,7 +79,7 @@ public class QianFanImageModelObservationIT {
 			.hasContextualNameEqualTo("image " + QianFanImageApi.ImageModel.Stable_Diffusion_XL.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.IMAGE.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.QIANFAN.value())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), "qianfan")
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					QianFanImageApi.ImageModel.Stable_Diffusion_XL.getValue())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(), "1024x1024")

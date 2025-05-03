@@ -157,7 +157,6 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(QianFanConstants.PROVIDER_NAME)
-			.requestOptions(buildRequestOptions(request))
 			.build();
 
 		return ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -199,7 +198,6 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(QianFanConstants.PROVIDER_NAME)
-				.requestOptions(buildRequestOptions(request))
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(

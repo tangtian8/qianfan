@@ -142,7 +142,6 @@ public class QianFanImageModel implements ImageModel {
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(imagePrompt)
 			.provider(QianFanConstants.PROVIDER_NAME)
-			.requestOptions(requestImageOptions)
 			.build();
 
 		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION

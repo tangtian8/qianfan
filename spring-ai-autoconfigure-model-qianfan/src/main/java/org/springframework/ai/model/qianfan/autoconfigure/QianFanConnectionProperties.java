@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.qianfan.api;
+package org.springframework.ai.model.qianfan.autoconfigure;
 
-import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.qianfan.api.QianFanConstants;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/**
- * The ApiUtils class provides utility methods for working with API requests and
- * responses.
- *
- * @author Geng Rong
- * @since 1.0
- */
-public final class QianFanConstants {
+@ConfigurationProperties(QianFanConnectionProperties.CONFIG_PREFIX)
+public class QianFanConnectionProperties extends QianFanParentProperties {
 
-	public static final String DEFAULT_BASE_URL = "https://aip.baidubce.com/rpc/2.0/ai_custom";
+	public static final String CONFIG_PREFIX = "spring.ai.qianfan";
 
-	public static final String PROVIDER_NAME = "qianfan";
+	public static final String DEFAULT_BASE_URL = QianFanConstants.DEFAULT_BASE_URL;
 
-	private QianFanConstants() {
-
+	public QianFanConnectionProperties() {
+		super.setBaseUrl(DEFAULT_BASE_URL);
 	}
 
 }

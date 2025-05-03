@@ -154,7 +154,6 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
 			.provider(QianFanConstants.PROVIDER_NAME)
-			.requestOptions(requestOptions)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
