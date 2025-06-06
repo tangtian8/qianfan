@@ -1,4 +1,4 @@
-# Spring AI QianFan
+# Spring AI QianFan [![Maven Central Version](https://img.shields.io/maven-central/v/org.springaicommunity/qianfan-core)](https://central.sonatype.com/artifact/org.springaicommunity/qianfan-core/)
 
 This module provides integration with Baidu's QianFan AI platform, offering a comprehensive suite of AI capabilities including chat models, embedding models, and image generation.
 
@@ -46,7 +46,7 @@ Add the dependency to your project:
 <dependency>
     <groupId>org.springaicommunity</groupId>
     <artifactId>qianfan-core</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>last-version</version>
 </dependency>
 ```
 
@@ -54,7 +54,7 @@ For Gradle projects:
 
 ```groovy
 dependencies {
-    implementation 'org.springaicommunity:qianfan-core:1.0.0-SNAPSHOT'
+    implementation 'org.springaicommunity:qianfan-core:last-version'
 }
 ```
 
