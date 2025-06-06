@@ -6,7 +6,7 @@ on:
       - 'release/*'
 jobs:
   build:
-    name: Publish snapshot version
+    name: Publish version
     runs-on: ubuntu-latest
 
     steps:
