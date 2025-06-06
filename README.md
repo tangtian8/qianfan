@@ -44,8 +44,8 @@ Add the dependency to your project:
 
 ```xml
 <dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-qianfan</artifactId>
+    <groupId>org.springaicommunity</groupId>
+    <artifactId>qianfan-core</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -54,7 +54,7 @@ For Gradle projects:
 
 ```groovy
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-qianfan:1.0.0-SNAPSHOT'
+    implementation 'org.springaicommunity:qianfan-core:1.0.0-SNAPSHOT'
 }
 ```
 

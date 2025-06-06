@@ -26,8 +26,8 @@ Add the QianFan dependency to your project:
 [source, xml]
 ----
 <dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-qianfan</artifactId>
+    <groupId>org.springaicommunity</groupId>
+    <artifactId>qianfan-core</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ----
@@ -39,7 +39,7 @@ For Gradle projects, add:
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-qianfan:1.0.0-SNAPSHOT'
+    implementation 'org.springframework.ai:qianfan-core:1.0.0-SNAPSHOT'
 }
 ----
 
