@@ -53,6 +53,7 @@ public class QianFanChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.ai.qianfan.api-version", havingValue = "V1", matchIfMissing = true)
 	public QianFanChatModel qianFanChatModel(QianFanConnectionProperties commonProperties,
 			QianFanChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
@@ -66,6 +67,28 @@ public class QianFanChatAutoConfiguration {
 
 		var chatModel = new QianFanChatModel(qianFanApi, chatProperties.getOptions(), retryTemplate,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+
+		return chatModel;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.ai.qianfan.api-version", havingValue = "V2", matchIfMissing = true)
+	public org.springaicommunity.qianfanv2.QianFanChatModel qianFanChatModelV2(
+			QianFanConnectionProperties commonProperties, QianFanChatProperties chatProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
+
+		var qianFanApi = qianFanApiv2(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+				chatProperties.getApiKey(), commonProperties.getApiKey(), chatProperties.getSecretKey(),
+				commonProperties.getSecretKey(), restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				responseErrorHandler);
+
+		var chatModel = new org.springaicommunity.qianfanv2.QianFanChatModel(qianFanApi, chatProperties.getOptionsV2(),
+				retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
@@ -86,6 +109,23 @@ public class QianFanChatAutoConfiguration {
 		Assert.hasText(resolvedSecretKey, "QianFan Secret key must be set");
 
 		return new QianFanApi(resolvedBaseUrl, resolvedApiKey, resolvedSecretKey, restClientBuilder,
+				responseErrorHandler);
+	}
+
+	private org.springaicommunity.qianfanv2.api.QianFanApi qianFanApiv2(String baseUrl, String commonBaseUrl,
+			String apiKey, String commonApiKey, String secretKey, String commonSecretKey,
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+
+		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
+		Assert.hasText(resolvedBaseUrl, "QianFan base URL must be set");
+
+		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
+		Assert.hasText(resolvedApiKey, "QianFan API key must be set");
+
+		String resolvedSecretKey = StringUtils.hasText(secretKey) ? secretKey : commonSecretKey;
+		Assert.hasText(resolvedSecretKey, "QianFan Secret key must be set");
+
+		return new org.springaicommunity.qianfanv2.api.QianFanApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder,
 				responseErrorHandler);
 	}
 

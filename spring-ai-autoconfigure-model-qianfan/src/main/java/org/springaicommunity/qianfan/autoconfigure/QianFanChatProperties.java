@@ -33,6 +33,8 @@ public class QianFanChatProperties extends QianFanParentProperties {
 
 	public static final String DEFAULT_CHAT_MODEL = QianFanApi.ChatModel.ERNIE_Speed_8K.value;
 
+	public static final String DEFAULT_CHAT_MODEL_V2 = org.springaicommunity.qianfanv2.api.QianFanApi.ChatModel.ERNIE_4_5_Turbo.value;
+
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
 	@NestedConfigurationProperty
@@ -41,8 +43,19 @@ public class QianFanChatProperties extends QianFanParentProperties {
 		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
+	@NestedConfigurationProperty
+	private org.springaicommunity.qianfanv2.QianFanChatOptions optionsV2 = org.springaicommunity.qianfanv2.QianFanChatOptions
+		.builder()
+		.model(DEFAULT_CHAT_MODEL)
+		.temperature(DEFAULT_TEMPERATURE)
+		.build();
+
 	public QianFanChatOptions getOptions() {
 		return this.options;
+	}
+
+	public org.springaicommunity.qianfanv2.QianFanChatOptions getOptionsV2() {
+		return this.optionsV2;
 	}
 
 	public void setOptions(QianFanChatOptions options) {

@@ -27,6 +27,9 @@ class QianFanParentProperties {
 
 	private String baseUrl;
 
+	// v2 //v1
+	private String apiVersion;
+
 	public String getApiKey() {
 		return this.apiKey;
 	}
@@ -49,6 +52,14 @@ class QianFanParentProperties {
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	public String getApiVersion() {
+		return apiVersion;
+	}
+
+	public void setApiVersion(String apiVersion) {
+		this.apiVersion = apiVersion;
 	}
 
 }
