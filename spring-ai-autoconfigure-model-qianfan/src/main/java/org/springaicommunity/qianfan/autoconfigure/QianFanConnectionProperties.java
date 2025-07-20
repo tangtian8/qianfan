@@ -17,6 +17,7 @@
 package org.springaicommunity.qianfan.autoconfigure;
 
 import org.springaicommunity.qianfan.api.QianFanConstants;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(QianFanConnectionProperties.CONFIG_PREFIX)
@@ -26,8 +27,20 @@ public class QianFanConnectionProperties extends QianFanParentProperties {
 
 	public static final String DEFAULT_BASE_URL = QianFanConstants.DEFAULT_BASE_URL;
 
+	public static final String DEFAULT_BASE_URL_V2 = org.springaicommunity.qianfanv2.api.QianFanConstants.DEFAULT_BASE_URL;
+
+	@Value("spring.ai.qianfan.api-version")
+	private String version;
+
 	public QianFanConnectionProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
+
+		if ("V2".equals(version)) {
+			super.setBaseUrl(DEFAULT_BASE_URL_V2);
+		}
+		else {
+			super.setBaseUrl(DEFAULT_BASE_URL);
+
+		}
 	}
 
 }

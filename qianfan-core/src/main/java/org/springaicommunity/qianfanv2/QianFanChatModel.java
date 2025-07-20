@@ -176,7 +176,8 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 					);
 					// @formatter:on
 
-				var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).message().content(), metadata);
+				var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).message().content(),
+						metadata);
 				List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
 				ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, request.model()));
 				observationContext.setResponse(chatResponse);
@@ -212,7 +213,8 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 						);
 						// @formatter:on
 
-					var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).message().content(), metadata);
+					var assistantMessage = new AssistantMessage(chatCompletion.choices().get(0).message().content(),
+							metadata);
 					List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
 					return new ChatResponse(generations, from(chatCompletion, request.model()));
 				}))

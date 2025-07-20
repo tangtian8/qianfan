@@ -37,7 +37,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
-import static org.springaicommunity.qianfan.api.QianFanConstants.PROVIDER_NAME;
+import static org.springaicommunity.qianfanv2.api.QianFanConstants.PROVIDER_NAME;
 
 /**
  * Embedding {@link AutoConfiguration Auto-configuration} for QianFan Embedding Model.
@@ -54,6 +54,7 @@ public class QianFanEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.ai.qianfan.api-version", havingValue = "V1", matchIfMissing = true)
 	public QianFanEmbeddingModel qianFanEmbeddingModel(QianFanConnectionProperties commonProperties,
 			QianFanEmbeddingProperties embeddingProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider, RetryTemplate retryTemplate,
@@ -67,6 +68,29 @@ public class QianFanEmbeddingAutoConfiguration {
 
 		var embeddingModel = new QianFanEmbeddingModel(qianFanApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
+
+		return embeddingModel;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.ai.qianfan.api-version", havingValue = "V2", matchIfMissing = true)
+	public org.springaicommunity.qianfanv2.QianFanEmbeddingModel qianFanEmbeddingModelV2(
+			QianFanConnectionProperties commonProperties, QianFanEmbeddingProperties embeddingProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
+
+		var qianFanApi = qianFanApiV2(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+				embeddingProperties.getApiKey(), commonProperties.getApiKey(), embeddingProperties.getSecretKey(),
+				commonProperties.getSecretKey(), restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				responseErrorHandler);
+
+		var embeddingModel = new org.springaicommunity.qianfanv2.QianFanEmbeddingModel(qianFanApi,
+				embeddingProperties.getMetadataMode(), embeddingProperties.getOptionsV2(), retryTemplate,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
@@ -88,6 +112,20 @@ public class QianFanEmbeddingAutoConfiguration {
 		Assert.hasText(resolvedSecretKey, "QianFan Secret key must be set");
 
 		return new QianFanApi(resolvedBaseUrl, resolvedApiKey, resolvedSecretKey, restClientBuilder,
+				responseErrorHandler);
+	}
+
+	private org.springaicommunity.qianfanv2.api.QianFanApi qianFanApiV2(String baseUrl, String commonBaseUrl,
+			String apiKey, String commonApiKey, String secretKey, String commonSecretKey,
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+
+		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
+		Assert.hasText(resolvedBaseUrl, "QianFan base URL must be set");
+
+		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
+		Assert.hasText(resolvedApiKey, "QianFan API key must be set");
+
+		return new org.springaicommunity.qianfanv2.api.QianFanApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder,
 				responseErrorHandler);
 	}
 

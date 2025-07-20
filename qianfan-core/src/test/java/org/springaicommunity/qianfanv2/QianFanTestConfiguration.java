@@ -35,10 +35,11 @@ public class QianFanTestConfiguration {
 		return new QianFanApi(getApiKey());
 	}
 
-//	@Bean
-//	public QianFanImageApi qianFanImageApi() {
-//		return new org.springaicommunity.qianfanv2.api.QianFanImageApi(getApiKey(), getSecretKey());
-//	}
+	// @Bean
+	// public QianFanImageApi qianFanImageApi() {
+	// return new org.springaicommunity.qianfanv2.api.QianFanImageApi(getApiKey(),
+	// getSecretKey());
+	// }
 
 	private String getApiKey() {
 		String apiKey = System.getenv("QIANFAN_API_KEY");
@@ -48,19 +49,20 @@ public class QianFanTestConfiguration {
 		}
 		return apiKey;
 	}
+
 	@Bean
 	public org.springaicommunity.qianfanv2.QianFanChatModel qianFanChatModel(QianFanApi api) {
 		return new org.springaicommunity.qianfanv2.QianFanChatModel(api);
 	}
-//
-//	@Bean
-//	public EmbeddingModel qianFanEmbeddingModel(QianFanApi api) {
-//		return new QianFanEmbeddingModel(api);
-//	}
-//
-//	@Bean
-//	public ImageModel qianFanImageModel(QianFanImageApi api) {
-//		return new QianFanImageModel(api);
-//	}
+	//
+	// @Bean
+	// public EmbeddingModel qianFanEmbeddingModel(QianFanApi api) {
+	// return new QianFanEmbeddingModel(api);
+	// }
+	//
+	// @Bean
+	// public ImageModel qianFanImageModel(QianFanImageApi api) {
+	// return new QianFanImageModel(api);
+	// }
 
 }

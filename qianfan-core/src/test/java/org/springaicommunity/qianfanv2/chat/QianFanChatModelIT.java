@@ -47,10 +47,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  */
 @SpringBootTest(classes = QianFanTestConfiguration.class)
-@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+")})
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+") })
 class QianFanChatModelIT {
 
 	private static final Logger log = LoggerFactory.getLogger(QianFanChatModelIT.class);
+
 	@Autowired
 	protected ChatModel chatModel;
 
@@ -68,7 +69,7 @@ class QianFanChatModelIT {
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = this.chatModel.call(prompt);
-		log.info("response:{}",response.getResults().get(0).getOutput().getText());
+		log.info("response:{}", response.getResults().get(0).getOutput().getText());
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
@@ -76,12 +77,18 @@ class QianFanChatModelIT {
 	@Test
 	void streamRoleTest() {
 		UserMessage userMessage = new UserMessage(
-				"Tell me about three famous pirates from the Golden Age of Piracy in english, focusing on their original nicknames and what they did.");
+				"Tell me about three famous pirates from the Golden Age of Piracy in english, focusing on their original nicknames and what they did.用中文回答");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		Flux<ChatResponse> flux = this.streamingChatModel.stream(prompt);
-
+		flux.doOnNext(chunk -> {
+			// 或者使用日志
+			log.info("ChatCompletionChunk: {}", chunk.getResults().get(0).getOutput().getText());
+		})
+			.doOnComplete(() -> System.out.println("流完成"))
+			.doOnError(error -> System.err.println("发生错误: " + error.getMessage()))
+			.subscribe();
 		List<ChatResponse> responses = flux.collectList().block();
 		assertThat(responses.size()).isGreaterThan(1);
 
@@ -91,7 +98,7 @@ class QianFanChatModelIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-
+		log.info("stitchedResponseContent:{}", stitchedResponseContent);
 		assertThat(stitchedResponseContent).contains("Blackbeard");
 	}
 

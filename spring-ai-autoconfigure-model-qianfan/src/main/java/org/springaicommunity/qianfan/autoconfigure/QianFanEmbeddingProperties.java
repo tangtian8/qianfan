@@ -39,8 +39,22 @@ public class QianFanEmbeddingProperties extends QianFanParentProperties {
 		.model(QianFanApi.DEFAULT_EMBEDDING_MODEL)
 		.build();
 
+	@NestedConfigurationProperty
+	private org.springaicommunity.qianfanv2.QianFanEmbeddingOptions optionsV2 = org.springaicommunity.qianfanv2.QianFanEmbeddingOptions
+		.builder()
+		.model(org.springaicommunity.qianfanv2.api.QianFanApi.DEFAULT_EMBEDDING_MODEL)
+		.build();
+
 	public QianFanEmbeddingOptions getOptions() {
 		return this.options;
+	}
+
+	public org.springaicommunity.qianfanv2.QianFanEmbeddingOptions getOptionsV2() {
+		return this.optionsV2;
+	}
+
+	public void setOptionsV2(org.springaicommunity.qianfanv2.QianFanEmbeddingOptions optionsV2) {
+		this.optionsV2 = optionsV2;
 	}
 
 	public void setOptions(QianFanEmbeddingOptions options) {

@@ -122,9 +122,6 @@ public class QianFanChatAutoConfiguration {
 		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		Assert.hasText(resolvedApiKey, "QianFan API key must be set");
 
-		String resolvedSecretKey = StringUtils.hasText(secretKey) ? secretKey : commonSecretKey;
-		Assert.hasText(resolvedSecretKey, "QianFan Secret key must be set");
-
 		return new org.springaicommunity.qianfanv2.api.QianFanApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder,
 				responseErrorHandler);
 	}
