@@ -29,18 +29,24 @@ public class QianFanConnectionProperties extends QianFanParentProperties {
 
 	public static final String DEFAULT_BASE_URL_V2 = org.springaicommunity.qianfanv2.api.QianFanConstants.DEFAULT_BASE_URL;
 
-	@Value("spring.ai.qianfan.api-version")
-	private String version;
+	@Override
+	public String getBaseUrl() {
+		// 如果手动设置了baseUrl，直接返回
+		String baseUrl = super.getBaseUrl();
+		if (baseUrl != null && !baseUrl.isEmpty()) {
+			return baseUrl;
+		}
 
-	public QianFanConnectionProperties() {
-
-		if ("V2".equals(version)) {
-			super.setBaseUrl(DEFAULT_BASE_URL_V2);
+		// 否则根据apiVersion动态返回
+		if ("V2".equals(getApiVersion())) {
+			return DEFAULT_BASE_URL_V2;
 		}
 		else {
-			super.setBaseUrl(DEFAULT_BASE_URL);
-
+			return DEFAULT_BASE_URL;
 		}
+	}
+
+	public QianFanConnectionProperties() {
 	}
 
 }
