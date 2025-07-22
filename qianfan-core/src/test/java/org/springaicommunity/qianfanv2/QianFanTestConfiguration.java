@@ -20,6 +20,8 @@ import org.springaicommunity.qianfanv2.QianFanChatModel;
 import org.springaicommunity.qianfanv2.QianFanEmbeddingModel;
 import org.springaicommunity.qianfanv2.QianFanImageModel;
 import org.springaicommunity.qianfanv2.api.QianFanApi;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.image.ImageModel;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -35,11 +37,10 @@ public class QianFanTestConfiguration {
 		return new QianFanApi(getApiKey());
 	}
 
-	// @Bean
-	// public QianFanImageApi qianFanImageApi() {
-	// return new org.springaicommunity.qianfanv2.api.QianFanImageApi(getApiKey(),
-	// getSecretKey());
-	// }
+	 @Bean
+	 public org.springaicommunity.qianfanv2.api.QianFanImageApi qianFanImageApi() {
+	 	return new org.springaicommunity.qianfanv2.api.QianFanImageApi(getApiKey());
+	 }
 
 	private String getApiKey() {
 		String apiKey = System.getenv("QIANFAN_API_KEY");
@@ -54,15 +55,15 @@ public class QianFanTestConfiguration {
 	public org.springaicommunity.qianfanv2.QianFanChatModel qianFanChatModel(QianFanApi api) {
 		return new org.springaicommunity.qianfanv2.QianFanChatModel(api);
 	}
-	//
-	// @Bean
-	// public EmbeddingModel qianFanEmbeddingModel(QianFanApi api) {
-	// return new QianFanEmbeddingModel(api);
-	// }
-	//
-	// @Bean
-	// public ImageModel qianFanImageModel(QianFanImageApi api) {
-	// return new QianFanImageModel(api);
-	// }
+
+	 @Bean
+	 public EmbeddingModel qianFanEmbeddingModel(org.springaicommunity.qianfanv2.api.QianFanApi api) {
+	 	return new org.springaicommunity.qianfanv2.QianFanEmbeddingModel(api);
+	 }
+
+	 @Bean
+	 public ImageModel qianFanImageModel(org.springaicommunity.qianfanv2.api.QianFanImageApi api) {
+	 return new org.springaicommunity.qianfanv2.QianFanImageModel(api);
+	 }
 
 }

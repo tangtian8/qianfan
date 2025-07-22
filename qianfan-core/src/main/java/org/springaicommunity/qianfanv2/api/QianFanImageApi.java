@@ -33,46 +33,42 @@ import java.util.List;
  * @author Geng Rong
  * @since 1.0
  */
-public class QianFanImageApi extends AuthApi {
+public class QianFanImageApi {
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.Stable_Diffusion_XL.getValue();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.ERNIE_iRAG_1.getValue();
 
 	private final RestClient restClient;
 
 	/**
 	 * Create a new QianFan Image api with default base URL.
 	 * @param apiKey QianFan api key.
-	 * @param secretKey QianFan secret key.
 	 */
-	public QianFanImageApi(String apiKey, String secretKey) {
-		this(QianFanConstants.DEFAULT_BASE_URL, apiKey, secretKey, RestClient.builder());
+	public QianFanImageApi(String apiKey) {
+		this(QianFanConstants.DEFAULT_BASE_URL, apiKey, RestClient.builder());
 	}
 
 	/**
 	 * Create a new QianFan Image API with the provided base URL.
 	 * @param baseUrl the base URL for the QianFan API.
 	 * @param apiKey QianFan api key.
-	 * @param secretKey QianFan secret key.
 	 * @param restClientBuilder the rest client builder to use.
 	 */
-	public QianFanImageApi(String baseUrl, String apiKey, String secretKey, RestClient.Builder restClientBuilder) {
-		this(baseUrl, apiKey, secretKey, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	public QianFanImageApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder) {
+		this(baseUrl, apiKey, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
 	 * Create a new QianFan Image API with the provided base URL.
 	 * @param baseUrl the base URL for the QianFan API.
 	 * @param apiKey QianFan api key.
-	 * @param secretKey QianFan secret key.
 	 * @param restClientBuilder the rest client builder to use.
 	 * @param responseErrorHandler the response error handler to use.
 	 */
-	public QianFanImageApi(String baseUrl, String apiKey, String secretKey, RestClient.Builder restClientBuilder,
+	public QianFanImageApi(String baseUrl, String apiKey,RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
-		super(apiKey, secretKey);
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(QianFanUtils.defaultHeaders())
+			.defaultHeaders(QianFanUtils.defaultHeaders(apiKey))
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 	}
@@ -82,8 +78,7 @@ public class QianFanImageApi extends AuthApi {
 		Assert.hasLength(qianFanImageRequest.prompt(), "Prompt cannot be empty.");
 
 		return this.restClient.post()
-			.uri("/v1/wenxinworkshop/text2image/{model}?access_token={token}", qianFanImageRequest.model(),
-					getAccessToken())
+			.uri("/images/generations")
 			.body(qianFanImageRequest)
 			.retrieve()
 			.toEntity(QianFanImageResponse.class);
@@ -97,7 +92,7 @@ public class QianFanImageApi extends AuthApi {
 		/**
 		 * Stable Diffusion XL (SDXL) is a powerful text-to-image generation model.
 		 */
-		Stable_Diffusion_XL("sd_xl");
+		ERNIE_iRAG_1	("irag-1.0");
 
 		private final String value;
 
@@ -138,7 +133,7 @@ public class QianFanImageApi extends AuthApi {
 	// @formatter:onn
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record Data(@JsonProperty("index") Integer index, @JsonProperty("b64_image") String b64Image) {
+	public record Data(@JsonProperty("index") Integer index, @JsonProperty("url") String url) {
 
 	}
 

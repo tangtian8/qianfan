@@ -174,7 +174,7 @@ public class QianFanImageModel implements ImageModel {
 
 		List<ImageGeneration> imageGenerationList = imageApiResponse.data()
 			.stream()
-			.map(entry -> new ImageGeneration(new Image(null, entry.b64Image())))
+			.map(entry -> new ImageGeneration(new Image(entry.url(), null)))
 			.toList();
 
 		return new ImageResponse(imageGenerationList);
