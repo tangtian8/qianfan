@@ -64,7 +64,7 @@ public class QianFanImageApi {
 	 * @param restClientBuilder the rest client builder to use.
 	 * @param responseErrorHandler the response error handler to use.
 	 */
-	public QianFanImageApi(String baseUrl, String apiKey,RestClient.Builder restClientBuilder,
+	public QianFanImageApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
@@ -92,7 +92,7 @@ public class QianFanImageApi {
 		/**
 		 * Stable Diffusion XL (SDXL) is a powerful text-to-image generation model.
 		 */
-		ERNIE_iRAG_1	("irag-1.0");
+		ERNIE_iRAG_1("irag-1.0");
 
 		private final String value;
 

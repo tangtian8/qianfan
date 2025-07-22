@@ -54,6 +54,7 @@ public class QianFanImageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.ai.qianfan.api-version", havingValue = "V1", matchIfMissing = true)
 	public QianFanImageModel qianFanImageModel(QianFanConnectionProperties commonProperties,
 			QianFanImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
@@ -77,6 +78,40 @@ public class QianFanImageAutoConfiguration {
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var imageModel = new QianFanImageModel(qianFanImageApi, imageProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(imageModel::setObservationConvention);
+
+		return imageModel;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.ai.qianfan.api-version", havingValue = "V2", matchIfMissing = true)
+	public org.springaicommunity.qianfanv2.QianFanImageModel qianFanImageModelV2(
+			QianFanConnectionProperties commonProperties, QianFanImageProperties imageProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ImageModelObservationConvention> observationConvention) {
+
+		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String secretKey = StringUtils.hasText(imageProperties.getSecretKey()) ? imageProperties.getSecretKey()
+				: commonProperties.getSecretKey();
+
+		String baseUrl = StringUtils.hasText(imageProperties.getBaseUrl()) ? imageProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "QianFan API key must be set.  Use the property: spring.ai.qianfan.api-key");
+		Assert.hasText(secretKey, "QianFan secret key must be set.  Use the property: spring.ai.qianfan.secret-key");
+		Assert.hasText(baseUrl, "QianFan base URL must be set.  Use the property: spring.ai.qianfan.base-url");
+
+		var qianFanImageApi = new org.springaicommunity.qianfanv2.api.QianFanImageApi(baseUrl, apiKey,
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+
+		var imageModel = new org.springaicommunity.qianfanv2.QianFanImageModel(qianFanImageApi,
+				imageProperties.getOptionsV2(), retryTemplate,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(imageModel::setObservationConvention);

@@ -33,11 +33,23 @@ public class QianFanImageProperties extends QianFanParentProperties {
 
 	public static final String DEFAULT_IMAGE_MODEL = QianFanImageApi.ImageModel.Stable_Diffusion_XL.getValue();
 
+	public static final String DEFAULT_IMAGE_MODEL_V2 = org.springaicommunity.qianfanv2.api.QianFanImageApi.ImageModel.ERNIE_iRAG_1
+		.getValue();
+
 	/**
 	 * Options for QianFan Image API.
 	 */
 	@NestedConfigurationProperty
 	private QianFanImageOptions options = QianFanImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build();
+
+	/**
+	 * Options for QianFan Image API.
+	 */
+	@NestedConfigurationProperty
+	private org.springaicommunity.qianfanv2.QianFanImageOptions optionsV2 = org.springaicommunity.qianfanv2.QianFanImageOptions
+		.builder()
+		.model(DEFAULT_IMAGE_MODEL_V2)
+		.build();
 
 	public QianFanImageOptions getOptions() {
 		return this.options;
@@ -45,6 +57,10 @@ public class QianFanImageProperties extends QianFanParentProperties {
 
 	public void setOptions(QianFanImageOptions options) {
 		this.options = options;
+	}
+
+	public org.springaicommunity.qianfanv2.QianFanImageOptions getOptionsV2() {
+		return this.optionsV2;
 	}
 
 }

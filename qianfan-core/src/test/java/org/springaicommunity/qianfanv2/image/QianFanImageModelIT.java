@@ -32,10 +32,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  */
 @SpringBootTest(classes = QianFanTestConfiguration.class)
-@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+")})
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "QIANFAN_API_KEY", matches = ".+") })
 public class QianFanImageModelIT {
 
 	private static final Logger log = LoggerFactory.getLogger(QianFanImageModelIT.class);
+
 	@Autowired
 	protected ImageModel imageModel;
 
@@ -56,7 +57,7 @@ public class QianFanImageModelIT {
 
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
-		log.info("image:{}",image);
+		log.info("image:{}", image);
 		assertThat(image.getUrl()).isNotEmpty();
 		assertThat(image.getB64Json()).isNull();
 	}
