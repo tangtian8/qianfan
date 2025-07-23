@@ -256,10 +256,13 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 		if (systemMessageList.size() > 1) {
 			throw new IllegalArgumentException("Only one system message is allowed in the prompt");
 		}
+		List<ChatCompletionMessage> messages = new ArrayList<>();
+		messages.addAll(systemMessageList);
+		messages.addAll(userMessageList);
+		// var systemMessage = systemMessageList.isEmpty() ? null :
+		// systemMessageList.get(0).content();
 
-		var systemMessage = systemMessageList.isEmpty() ? null : systemMessageList.get(0).content();
-
-		var request = new ChatCompletionRequest(userMessageList, systemMessage, stream);
+		var request = new ChatCompletionRequest(messages, stream);
 
 		if (this.defaultOptions != null) {
 			request = ModelOptionsUtils.merge(this.defaultOptions, request, ChatCompletionRequest.class);

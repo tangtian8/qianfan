@@ -55,7 +55,11 @@ public class QianFanChatProperties extends QianFanParentProperties {
 	}
 
 	public org.springaicommunity.qianfanv2.QianFanChatOptions getOptionsV2() {
-		return this.optionsV2;
+		return optionsV2;
+	}
+
+	public void setOptionsV2(org.springaicommunity.qianfanv2.QianFanChatOptions optionsV2) {
+		this.optionsV2 = optionsV2;
 	}
 
 	public void setOptions(QianFanChatOptions options) {

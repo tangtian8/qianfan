@@ -250,7 +250,6 @@ public class QianFanApi {
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
-	 * @param system The system ID to use.
 	 * @param model ID of the model to use.
 	 * @param frequencyPenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
@@ -274,7 +273,7 @@ public class QianFanApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
-			@JsonProperty("system") String system,
+//			@JsonProperty("system") String system,
 			@JsonProperty("model") String model,
 			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("max_output_tokens") Integer maxTokens,
@@ -292,8 +291,8 @@ public class QianFanApi {
 		 * @param model ID of the model to use.
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Double temperature) {
-			this(messages, system, model, null, null,
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
+			this(messages, model, null, null,
 					null, null, null, false, temperature, null);
 		}
 
@@ -306,8 +305,8 @@ public class QianFanApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, String model, Double temperature, boolean stream) {
-			this(messages, system, model, null, null,
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
+			this(messages, model, null, null,
 					null, null, null, stream, temperature, null);
 		}
 
@@ -320,8 +319,8 @@ public class QianFanApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String system, Boolean stream) {
-			this(messages, system, DEFAULT_CHAT_MODEL, null, null,
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
+			this(messages, DEFAULT_CHAT_MODEL, null, null,
 					null, null, null, stream, 0.8, null);
 		}
 
