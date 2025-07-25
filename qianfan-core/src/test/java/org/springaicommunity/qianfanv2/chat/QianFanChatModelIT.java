@@ -21,7 +21,9 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springaicommunity.qianfanv2.QianFanChatOptions;
 import org.springaicommunity.qianfanv2.QianFanTestConfiguration;
+import org.springaicommunity.qianfanv2.api.QianFanApi;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -29,6 +31,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +40,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -72,6 +77,41 @@ class QianFanChatModelIT {
 		log.info("response:{}", response.getResults().get(0).getOutput().getText());
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
+	}
+
+	@Test
+	void roleToolTest() {
+		UserMessage userMessage = new UserMessage("T查一下上海和北京现在的天气");
+
+		List<QianFanApi.FunctionTool> tools = new ArrayList<>();
+		Map<String, Object> properties = new HashMap<>();
+
+		Map<String, Object> location = new HashMap<>();
+		location.put("description", "地理位置，精确到区县级别");
+		location.put("type", "string");
+		Map<String, Object> time = new HashMap<>();
+		time.put("description", "时间，格式为YYYY-MM-DD");
+		time.put("type", "string");
+
+		properties.put("location", location);
+		properties.put("time", time);
+
+		Map<String, Object> parameters = new HashMap<>();
+		parameters.put("properties", properties);
+		parameters.put("type", "object");
+
+		QianFanApi.Function function = new QianFanApi.Function("get_current_weather", "天气查询工具", parameters);
+		QianFanApi.FunctionTool tool = new QianFanApi.FunctionTool(function);
+		tools.add(tool);
+
+		QianFanChatOptions qianFanChatOptions = new QianFanChatOptions();
+		qianFanChatOptions.setModel("ernie-lite-pro-128k");
+		qianFanChatOptions.setTools(tools);
+		Prompt prompt = new Prompt(List.of(userMessage), qianFanChatOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+		log.info("response:{}", response);
+		// assertThat(response.getResults()).hasSize(1);
+		// assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test

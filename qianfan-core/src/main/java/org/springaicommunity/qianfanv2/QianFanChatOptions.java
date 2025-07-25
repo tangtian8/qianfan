@@ -22,8 +22,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springaicommunity.qianfanv2.api.QianFanApi;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * QianFanChatOptions represents the options for performing chat completion using the
@@ -36,7 +40,7 @@ import java.util.List;
  * @see ChatOptions
  */
 @JsonInclude(Include.NON_NULL)
-public class QianFanChatOptions implements ChatOptions {
+public class QianFanChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
 	/**
@@ -81,8 +85,87 @@ public class QianFanChatOptions implements ChatOptions {
 	private @JsonProperty("top_p") Double topP;
 	// @formatter:on
 
+	@JsonProperty("tools")
+	private List<QianFanApi.FunctionTool> tools;
+
+	@JsonProperty("tool_choice")
+	private QianFanApi.ChatCompletionRequest.ToolChoice toolChoice;
+
+	@JsonIgnore
+	private List<ToolCallback> toolCallbacks = new ArrayList();
+
+	@JsonIgnore
+	private Set<String> toolNames = new HashSet();
+
+	@JsonIgnore
+	private Boolean internalToolExecutionEnabled;
+
+	@JsonIgnore
+	private Map<String, Object> toolContext = new HashMap();
+
+	@Override
+	public List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach((tool) -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
+	}
+
+	@Override
+	public void setInternalToolExecutionEnabled(Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	public List<QianFanApi.FunctionTool> getTools() {
+		return tools;
+	}
+
+	public void setTools(List<QianFanApi.FunctionTool> tools) {
+		this.tools = tools;
+	}
+
+	public QianFanApi.ChatCompletionRequest.ToolChoice getToolChoice() {
+		return toolChoice;
+	}
+
+	public void setToolChoice(QianFanApi.ChatCompletionRequest.ToolChoice toolChoice) {
+		this.toolChoice = toolChoice;
 	}
 
 	public static QianFanChatOptions fromOptions(QianFanChatOptions fromOptions) {
@@ -95,6 +178,12 @@ public class QianFanChatOptions implements ChatOptions {
 			.stop(fromOptions.getStop())
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
+			.tools(fromOptions.getTools())
+			.toolChoice(fromOptions.getToolChoice())
+			.toolCallbacks(fromOptions.getToolCallbacks())
+			.toolNames(fromOptions.getToolNames())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
 
@@ -333,6 +422,43 @@ public class QianFanChatOptions implements ChatOptions {
 
 		public Builder topP(Double topP) {
 			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder tools(List<QianFanApi.FunctionTool> tools) {
+			this.options.tools = tools;
+			return this;
+		}
+
+		public Builder toolChoice(QianFanApi.ChatCompletionRequest.ToolChoice toolChoice) {
+			this.options.toolChoice = toolChoice;
+			return this;
+		}
+
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setToolNames(toolNames);
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+
 			return this;
 		}
 

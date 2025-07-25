@@ -16,6 +16,9 @@
 
 package org.springaicommunity.qianfanv2;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -40,7 +43,9 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.*;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -48,10 +53,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal QianFan}
@@ -69,6 +71,8 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	private static final Logger logger = LoggerFactory.getLogger(QianFanChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
+	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
 	/**
 	 * The retry template used to retry the QianFan API calls.
@@ -94,6 +98,8 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	 * Conventions to use for generating observations.
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+
+	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
 
 	/**
 	 * Creates an instance of the QianFanChatModel.
@@ -148,9 +154,17 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-
-		ChatCompletionRequest request = createRequest(prompt, false);
-
+		Prompt requestPrompt = this.buildRequestPrompt(prompt);
+		ChatCompletionRequest request = createRequest(requestPrompt, false);
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			// 对象转JSON字符串
+			String json = objectMapper.writeValueAsString(request);
+			logger.info("request:{}", json);
+		}
+		catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(QianFanConstants.PROVIDER_NAME)
@@ -172,15 +186,61 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 			// @formatter:off
 					Map<String, Object> metadata = Map.of(
 						"id", chatCompletion.id(),
-						"role", Role.ASSISTANT
+						"role", Role.assistant
 					);
+
+				try {
+					// 对象转JSON字符串
+					String json = objectMapper.writeValueAsString(chatCompletion);
+					logger.info("response:{}", json);
+				} catch (JsonProcessingException e) {
+					e.printStackTrace();
+				}
 					// @formatter:on
 				String content = chatCompletion.choices().get(0).message().content();
-				var assistantMessage = new AssistantMessage(content, metadata);
+				List<QianFanApi.ToolCalls> toolCallsParam = chatCompletion.choices().get(0).message().toolCalls();
+				List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
+				if (!CollectionUtils.isEmpty(toolCallsParam)) {
+					for (QianFanApi.ToolCalls ele : toolCallsParam) {
+						Map<String, String> function = ele.function();
+						String name = function.get("name");
+						String arguments = function.get("arguments");
+						AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall(name, ele.type(), name,
+								arguments);
+						toolCalls.add(toolCall);
+					}
+				}
+				var assistantMessage = new AssistantMessage(content, metadata, toolCalls);
 				List<Generation> generations = Collections.singletonList(new Generation(assistantMessage));
+
+				// List<Generation> generations =
+				// chatCompletion.choices().stream().map((choice) -> {
+				// Map<String, Object> metadata = Map.of("id", chatCompletion.id() != null
+				// ? chatCompletion.id() : "", "index", choice.index(), "role",
+				// choice.message().role() != null ? choice.message().role().name() : "",
+				// "finishReason", choice.finishReason() != null ?
+				// choice.finishReason().name() : "");
+				// return this.buildGeneration(choice, metadata);
+				// }).toList();
+
 				ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, request.model()));
 				observationContext.setResponse(chatResponse);
-				return chatResponse;
+
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
+					logger.info("执行tools");
+					ToolExecutionResult toolExecutionResult = this.DEFAULT_TOOL_CALLING_MANAGER.executeToolCalls(prompt,
+							chatResponse);
+					return toolExecutionResult.returnDirect()
+							? ChatResponse.builder()
+								.from(chatResponse)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build()
+							: this.call(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()));
+				}
+				else {
+					return chatResponse;
+				}
+
 			});
 	}
 
@@ -208,7 +268,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 				// @formatter:off
 						Map<String, Object> metadata = Map.of(
 								"id", chatCompletion.id(),
-								"role", Role.ASSISTANT
+								"role", Role.assistant
 						);
 						// @formatter:on
 
@@ -248,10 +308,11 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	public ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		var chatCompletionMessages = prompt.getInstructions()
 			.stream()
-			.map(m -> new ChatCompletionMessage(m.getText(), Role.valueOf(m.getMessageType().name())))
+			.map(m -> new ChatCompletionMessage(m.getText(),
+					Role.valueOf(m.getMessageType().name().toLowerCase(Locale.ROOT))))
 			.toList();
-		var systemMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() == Role.SYSTEM).toList();
-		var userMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() != Role.SYSTEM).toList();
+		var systemMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() == Role.system).toList();
+		var userMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() != Role.system).toList();
 
 		if (systemMessageList.size() > 1) {
 			throw new IllegalArgumentException("Only one system message is allowed in the prompt");
@@ -261,7 +322,6 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 		messages.addAll(userMessageList);
 		// var systemMessage = systemMessageList.isEmpty() ? null :
 		// systemMessageList.get(0).content();
-
 		var request = new ChatCompletionRequest(messages, stream);
 
 		if (this.defaultOptions != null) {
@@ -272,8 +332,76 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 			var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
 					QianFanChatOptions.class);
 			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
+
+			List<ToolDefinition> toolDefinitions = DEFAULT_TOOL_CALLING_MANAGER
+				.resolveToolDefinitions((QianFanChatOptions) prompt.getOptions());
+			request = ModelOptionsUtils.merge(
+					QianFanChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
+					QianFanApi.ChatCompletionRequest.class);
+
+			request = ModelOptionsUtils.merge(
+					QianFanChatOptions.builder().tools(((QianFanChatOptions) prompt.getOptions()).getTools()).build(),
+					request, QianFanApi.ChatCompletionRequest.class);
 		}
 		return request;
+	}
+
+	private static ObjectMapper objectMapper = new ObjectMapper();
+
+	private List<QianFanApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
+		return toolDefinitions.stream().map((toolDefinition) -> {
+			try {
+				Map<String, Object> schemaMap = objectMapper.readValue(toolDefinition.inputSchema(),
+						new TypeReference<Map<String, Object>>() {
+						});
+				QianFanApi.Function function = new QianFanApi.Function(toolDefinition.description(),
+						toolDefinition.name(), schemaMap);
+				return new QianFanApi.FunctionTool(function);
+			}
+			catch (Exception e) {
+				// 处理JSON解析异常
+				throw new RuntimeException("Schema解析失败", e);
+			}
+		}).toList();
+	}
+
+	Prompt buildRequestPrompt(Prompt prompt) {
+		QianFanChatOptions runtimeOptions = null;
+		if (prompt.getOptions() != null) {
+			ChatOptions var4 = prompt.getOptions();
+			if (var4 instanceof ToolCallingChatOptions) {
+				ToolCallingChatOptions toolCallingChatOptions = (ToolCallingChatOptions) var4;
+				runtimeOptions = (QianFanChatOptions) ModelOptionsUtils.copyToTarget(toolCallingChatOptions,
+						ToolCallingChatOptions.class, QianFanChatOptions.class);
+			}
+			else {
+				runtimeOptions = (QianFanChatOptions) ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+						ChatOptions.class, QianFanChatOptions.class);
+			}
+		}
+
+		QianFanChatOptions requestOptions = (QianFanChatOptions) ModelOptionsUtils.merge(runtimeOptions,
+				this.defaultOptions, QianFanChatOptions.class);
+		if (runtimeOptions != null) {
+			requestOptions.setInternalToolExecutionEnabled(
+					(Boolean) ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
+							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
+					this.defaultOptions.getToolNames()));
+			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
+					this.defaultOptions.getToolCallbacks()));
+			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
+					this.defaultOptions.getToolContext()));
+		}
+		else {
+			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions.setToolNames(this.defaultOptions.getToolNames());
+			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
+			requestOptions.setToolContext(this.defaultOptions.getToolContext());
+		}
+
+		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
+		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
 
 	@Override

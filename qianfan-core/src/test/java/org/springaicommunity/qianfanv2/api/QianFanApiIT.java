@@ -16,6 +16,8 @@
 
 package org.springaicommunity.qianfanv2.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
@@ -27,8 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.stringtemplate.v4.ST;
 import reactor.core.publisher.Flux;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,13 +47,56 @@ public class QianFanApiIT {
 	@Test
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world",
-				ChatCompletionMessage.Role.USER);
+				ChatCompletionMessage.Role.user);
 
 		ChatCompletionMessage chatCompletionMessageSystem = new ChatCompletionMessage(buildSystemMessage(),
-				ChatCompletionMessage.Role.SYSTEM);
+				ChatCompletionMessage.Role.system);
 		ResponseEntity<ChatCompletion> response = this.qianFanApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(chatCompletionMessage, chatCompletionMessageSystem), "ernie-4.0-8k", 0.7, false));
+				List.of(chatCompletionMessage, chatCompletionMessageSystem), "ernie-4.5-turbo-128k", 0.7, false));
 		log.info("response:{}", response);
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+	}
+
+	@Test
+	void chatToolCompletionEntity() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("查一下上海和北京现在的天气",
+				ChatCompletionMessage.Role.user);
+
+		List<FunctionTool> tools = new ArrayList<>();
+		Map<String, Object> properties = new HashMap<>();
+
+		Map<String, Object> location = new HashMap<>();
+		location.put("description", "地理位置，精确到区县级别");
+		location.put("type", "string");
+		Map<String, Object> time = new HashMap<>();
+		time.put("description", "时间，格式为YYYY-MM-DD");
+		time.put("type", "string");
+
+		properties.put("location", location);
+		properties.put("time", time);
+
+		Map<String, Object> parameters = new HashMap<>();
+		parameters.put("properties", properties);
+		parameters.put("type", "object");
+
+		Function function = new Function("get_current_weather", "天气查询工具", parameters);
+		FunctionTool tool = new FunctionTool(function);
+		tools.add(tool);
+
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
+				"ernie-lite-pro-128k", 0.7, tools, null);
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			// 对象转JSON字符串
+			String json = objectMapper.writeValueAsString(chatCompletionRequest);
+			log.info("request:{}", json);
+		}
+		catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+		ResponseEntity<ChatCompletion> response = this.qianFanApi.chatCompletionEntity(chatCompletionRequest);
+		log.info("response:{}", response.getBody());
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 	}
@@ -60,11 +104,11 @@ public class QianFanApiIT {
 	@Test
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world",
-				ChatCompletionMessage.Role.USER);
+				ChatCompletionMessage.Role.user);
 		ChatCompletionMessage chatCompletionMessageSystem = new ChatCompletionMessage(buildSystemMessage(),
-				ChatCompletionMessage.Role.SYSTEM);
+				ChatCompletionMessage.Role.system);
 		Flux<ChatCompletionChunk> response = this.qianFanApi.chatCompletionStream(new ChatCompletionRequest(
-				List.of(chatCompletionMessage, chatCompletionMessageSystem), "ernie-4.0-8k", 0.7, true));
+				List.of(chatCompletionMessage, chatCompletionMessageSystem), "ernie-4.5-turbo-128k", 0.7, true));
 		// log.info("response:{}",response.collectList().block());
 		assertThat(response).isNotNull();
 		response.doOnNext(chunk -> {
@@ -85,7 +129,7 @@ public class QianFanApiIT {
 
 		assertThat(response).isNotNull();
 		assertThat(Objects.requireNonNull(response.getBody()).data()).hasSize(1);
-		assertThat(response.getBody().data().get(0).embedding()).hasSize(1024);
+		assertThat(response.getBody().data().get(0).embedding()).hasSize(384);
 		log.info("ChatCompletionChunk: {}", response.getBody().data());
 
 	}

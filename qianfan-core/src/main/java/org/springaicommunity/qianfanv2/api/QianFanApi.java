@@ -31,7 +31,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.Map;
 
 // @formatter:off
 /**
@@ -273,7 +273,6 @@ public class QianFanApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
-//			@JsonProperty("system") String system,
 			@JsonProperty("model") String model,
 			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("max_output_tokens") Integer maxTokens,
@@ -282,7 +281,15 @@ public class QianFanApi {
 			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("temperature") Double temperature,
-			@JsonProperty("top_p") Double topP) {
+			@JsonProperty("top_p") Double topP,
+			@JsonProperty("tools") List<FunctionTool> tools,
+			@JsonProperty("tool_choice") ToolChoice toolChoice
+			) {
+
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,List<FunctionTool> tools,ToolChoice toolChoice) {
+			this(messages, model, null, null,
+					null, null, null, false, temperature, null,tools,toolChoice);
+		}
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and model.
@@ -293,7 +300,7 @@ public class QianFanApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null,
-					null, null, null, false, temperature, null);
+					null, null, null, false, temperature, null,null,null);
 		}
 
 		/**
@@ -307,7 +314,7 @@ public class QianFanApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null,
-					null, null, null, stream, temperature, null);
+					null, null, null, stream, temperature, null,null,null);
 		}
 
 
@@ -321,7 +328,7 @@ public class QianFanApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, DEFAULT_CHAT_MODEL, null, null,
-					null, null, null, stream, 0.8, null);
+					null, null, null, stream, 0.8, null,null,null);
 		}
 
 		/**
@@ -331,6 +338,19 @@ public class QianFanApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(
 				@JsonProperty("type") String type) {
+		}
+
+		@JsonInclude(Include.NON_NULL)
+		public static enum ToolChoice {
+			@JsonProperty("auto")
+			AUTO,
+			@JsonProperty("any")
+			ANY,
+			@JsonProperty("none")
+			NONE;
+
+			private ToolChoice() {
+			}
 		}
 	}
 
@@ -367,17 +387,22 @@ public class QianFanApi {
 			 * System message.
 			 */
 			@JsonProperty("system")
-			SYSTEM,
+			system,
 			/**
 			 * User message.
 			 */
 			@JsonProperty("user")
-			USER,
+			user,
 			/**
 			 * Assistant message.
 			 */
 			@JsonProperty("assistant")
-			ASSISTANT
+			assistant,
+			/**
+			 * Assistant message.
+			 */
+			@JsonProperty("tool")
+			tool
 		}
 	}
 
@@ -442,9 +467,17 @@ public class QianFanApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Message(
 			@JsonProperty("content") String content,
-			@JsonProperty("role") String role) {
+			@JsonProperty("role") String role,
+			@JsonProperty("tool_calls") List<ToolCalls> toolCalls) {
 	}
 
+
+	@JsonInclude(Include.NON_NULL)
+	public record ToolCalls(
+		@JsonProperty("id") String id,
+		@JsonProperty("type") String type,
+		@JsonProperty("function") Map<String,String> function){
+	}
 	@JsonInclude(Include.NON_NULL)
 	public record ChoicesChunk(
 			@JsonProperty("index") Integer index,
@@ -579,6 +612,19 @@ public class QianFanApi {
 			@JsonProperty("error_msg") String errorNsg,
 			@JsonProperty("usage") Usage usage) {
 		// @formatter:on
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record FunctionTool(@JsonProperty("type") String type, @JsonProperty("function") Function function) {
+
+		public FunctionTool(Function function) {
+			this("function", function);
+		}
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record Function(@JsonProperty("description") String description, @JsonProperty("name") String name,
+			@JsonProperty("parameters") Map<String, Object> parameters) {
 	}
 
 }
