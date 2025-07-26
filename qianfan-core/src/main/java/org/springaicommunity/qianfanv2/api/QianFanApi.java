@@ -381,6 +381,10 @@ public class QianFanApi {
 
 		/**
 		 * The role of the author of this message.
+		 * https://cloud.baidu.com/doc/WENXINWORKSHOP/s/om1k634fe#%E5%A4%9A%E8%A7%92%E8%89%B2%E7%B1%BB%E5%9E%8B
+		 * system	否	代表系统角色设定，其content字段为角色设定信息
+		 * user	是	代表用户输入，其content字段为对话文本内容
+		 * assistant	无标注样例不包含，有标注样例包含	代表模型回答，其content字段为对话文本内容
 		 */
 		public enum Role {
 			/**

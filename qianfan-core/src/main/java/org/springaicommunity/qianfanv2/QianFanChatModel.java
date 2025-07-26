@@ -32,6 +32,7 @@ import org.springaicommunity.qianfanv2.api.QianFanApi.ChatCompletionMessage.Role
 import org.springaicommunity.qianfanv2.api.QianFanApi.ChatCompletionRequest;
 import org.springaicommunity.qianfanv2.api.QianFanConstants;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
@@ -230,12 +231,17 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 					logger.info("执行tools");
 					ToolExecutionResult toolExecutionResult = this.DEFAULT_TOOL_CALLING_MANAGER.executeToolCalls(prompt,
 							chatResponse);
-					return toolExecutionResult.returnDirect()
-							? ChatResponse.builder()
-								.from(chatResponse)
-								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-								.build()
-							: this.call(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()));
+					return ChatResponse.builder()
+						.from(chatResponse)
+						.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+						.build();
+					// return toolExecutionResult.returnDirect()
+					// ? ChatResponse.builder()
+					// .from(chatResponse)
+					// .generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+					// .build()
+					// : this.call(new Prompt(toolExecutionResult.conversationHistory(),
+					// prompt.getOptions()));
 				}
 				else {
 					return chatResponse;
@@ -308,11 +314,10 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 	public ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		var chatCompletionMessages = prompt.getInstructions()
 			.stream()
-			.map(m -> new ChatCompletionMessage(m.getText(),
-					Role.valueOf(m.getMessageType().name().toLowerCase(Locale.ROOT))))
+			.map(m -> new ChatCompletionMessage(m.getText(), Role.valueOf(m.getMessageType().getValue())))
 			.toList();
 		var systemMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() == Role.system).toList();
-		var userMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() != Role.system).toList();
+		var userMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() == Role.user).toList();
 
 		if (systemMessageList.size() > 1) {
 			throw new IllegalArgumentException("Only one system message is allowed in the prompt");
@@ -338,10 +343,6 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 			request = ModelOptionsUtils.merge(
 					QianFanChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
 					QianFanApi.ChatCompletionRequest.class);
-
-			request = ModelOptionsUtils.merge(
-					QianFanChatOptions.builder().tools(((QianFanChatOptions) prompt.getOptions()).getTools()).build(),
-					request, QianFanApi.ChatCompletionRequest.class);
 		}
 		return request;
 	}
